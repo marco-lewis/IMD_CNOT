@@ -1,5 +1,5 @@
 
-section \<open>CNOT\<close>
+section \<open>CNOT Circuit\<close>
                   
 theory CNOT
   imports
@@ -10,46 +10,49 @@ theory CNOT
 begin
 
 
-abbreviation \<psi>00 :: "complex Matrix.mat" where
-"\<psi>00 \<equiv> mat_of_cols_list 4 [[1,0,0,0]]"
+abbreviation \<psi>\<^sub>0\<^sub>0 :: "complex Matrix.mat" where
+"\<psi>\<^sub>0\<^sub>0 \<equiv> mat_of_cols_list 4 [[1,0,0,0]]"
 
-abbreviation \<psi>10 :: "complex Matrix.mat" where
-"\<psi>10 \<equiv> mat_of_cols_list 4 [[0,0,1,0]]"
+abbreviation \<psi>\<^sub>1\<^sub>0 :: "complex Matrix.mat" where
+"\<psi>\<^sub>1\<^sub>0 \<equiv> mat_of_cols_list 4 [[0,0,1,0]]"
 
-abbreviation \<psi>11 :: "complex Matrix.mat" where
-"\<psi>11 \<equiv> mat_of_cols_list 4 [[0,0,0,1]]"
+abbreviation \<psi>\<^sub>1\<^sub>1 :: "complex Matrix.mat" where
+"\<psi>\<^sub>1\<^sub>1 \<equiv> mat_of_cols_list 4 [[0,0,0,1]]"
 
 
-lemma \<psi>00_is_zero_zero:
-  shows "\<psi>00 = |zero\<rangle> \<Otimes> |zero\<rangle>"
+lemma \<psi>\<^sub>0\<^sub>0_is_zero_zero:
+  shows "\<psi>\<^sub>0\<^sub>0 = |zero\<rangle> \<Otimes> |zero\<rangle>"
 proof 
-  show "dim_row \<psi>00 = dim_row ( |zero\<rangle> \<Otimes> |zero\<rangle>)" 
+  show "dim_row \<psi>\<^sub>0\<^sub>0 = dim_row ( |zero\<rangle> \<Otimes> |zero\<rangle>)" 
     by (simp add: mat_of_cols_list_def)
-  show "dim_col \<psi>00 = dim_col ( |zero\<rangle> \<Otimes> |zero\<rangle>)" 
+  show "dim_col \<psi>\<^sub>0\<^sub>0 = dim_col ( |zero\<rangle> \<Otimes> |zero\<rangle>)" 
     by (simp add: mat_of_cols_list_def)
   fix i j:: nat
-  assume "i < dim_row ( |zero\<rangle> \<Otimes> |zero\<rangle>)" and "j < dim_col ( |zero\<rangle> \<Otimes> |zero\<rangle>)"
+  assume "i < dim_row ( |zero\<rangle> \<Otimes> |zero\<rangle>)" 
+    and "j < dim_col ( |zero\<rangle> \<Otimes> |zero\<rangle>)"
   then have "i \<in> {0,1,2,3}" and "j = 0" 
     using mat_of_cols_list_def by auto
-  show "\<psi>00 $$ (i,j) = ( |zero\<rangle> \<Otimes> |zero\<rangle>) $$ (i,j)" 
-    by (simp add: mat_of_cols_list_def)
+  show "\<psi>\<^sub>0\<^sub>0 $$ (i,j) = ( |zero\<rangle> \<Otimes> |zero\<rangle>) $$ (i,j)" 
+    using ket_zero_is_state 
+    by auto
 qed
 
-(*
-lemma \<psi>00_is_state:
-  shows "state 2 \<psi>00" 
+lemma \<psi>\<^sub>0\<^sub>0_is_state:
+  shows "state 2 \<psi>\<^sub>0\<^sub>0"
 proof
-  show "dim_col \<psi>00 = 1"
+  show "dim_col \<psi>\<^sub>0\<^sub>0 = 1"
     by (simp add: mat_of_cols_list_def)
-  show "dim_row \<psi>00 = 2\<^sup>2"
+  show "dim_row \<psi>\<^sub>0\<^sub>0 = 2\<^sup>2"
     by (simp add: mat_of_cols_list_def)
-  show "\<parallel>Matrix.col \<psi>00 0\<parallel> = 1"
-    using state.is_normal tensor_state2 by auto
+  have "\<parallel>Matrix.col |zero\<rangle> 0\<parallel> = 1" 
+    using ket_zero_is_state state.is_normal by auto
+  thus "\<parallel>Matrix.col \<psi>\<^sub>0\<^sub>0 0\<parallel> = 1"
+    using state.is_normal tensor_state2 \<psi>\<^sub>0\<^sub>0_is_zero_zero
+    ket_zero_is_state by force
 qed
-*)
 
+subsection "First Operation"
 
-(* First Operation *)
 abbreviation X_on_ctrl where "X_on_ctrl \<equiv> (X \<Otimes> Id 1)"
 
 lemma X_tensor_id:
@@ -63,11 +66,13 @@ proof
     by (simp add: d X_def Id_def mat_of_cols_list_def)
   show "dim_row X_on_ctrl = dim_row v"
     by (simp add: d X_def Id_def mat_of_cols_list_def)
-  fix i j:: nat assume "i < dim_row v" and "j < dim_col v"
+  fix i j:: nat assume "i < dim_row v" 
+                and "j < dim_col v"
   then have "i \<in> {0..<4} \<and> j \<in> {0..<4}" 
     by (auto simp add: d mat_of_cols_list_def)
   thus "X_on_ctrl $$ (i, j) = v $$ (i, j)"
-    by (auto simp add: d Id_def X_def mat_of_cols_list_def)
+    by (auto simp add: d Id_def X_def 
+        mat_of_cols_list_def)
 qed
 
 lemma X_on_ctrl_is_gate:
@@ -83,55 +88,73 @@ proof
     using X_tensor_id by (simp add: mat_of_cols_list_def)
 qed
 
-lemma \<psi>00_to_\<psi>10:              
-  shows "(X \<Otimes> Id 1) * \<psi>00 = \<psi>10"
+lemma \<psi>\<^sub>0\<^sub>0_to_\<psi>\<^sub>1\<^sub>0:              
+  shows "(X \<Otimes> Id 1) * \<psi>\<^sub>0\<^sub>0 = \<psi>\<^sub>1\<^sub>0"
 proof
   fix i j:: nat
-  assume "i < dim_row \<psi>10" and "j < dim_col \<psi>10"
-  then have a0:"i \<in> {0,1,2,3} \<and> j = 0" by (auto simp add: mat_of_cols_list_def)
-  then have "i < dim_row (X_on_ctrl) \<and> j < dim_col \<psi>00"
+  assume "i < dim_row \<psi>\<^sub>1\<^sub>0" and "j < dim_col \<psi>\<^sub>1\<^sub>0"
+  then have a0:"i \<in> {0,1,2,3} \<and> j = 0" 
+    by (auto simp add: mat_of_cols_list_def)
+  then have "i < dim_row (X_on_ctrl) \<and> j < dim_col \<psi>\<^sub>0\<^sub>0"
     using mat_of_cols_list_def X_tensor_id by auto
-  then have "(X_on_ctrl*\<psi>00) $$ (i,j)
-        = (\<Sum> k \<in> {0 ..< dim_vec \<psi>00}. (Matrix.row (X_on_ctrl) i) $ k * (Matrix.col \<psi>00 j) $ k)"
+  then have "(X_on_ctrl*\<psi>\<^sub>0\<^sub>0) $$ (i,j)
+        = (\<Sum> k \<in> {0 ..< dim_vec \<psi>\<^sub>0\<^sub>0}. (Matrix.row (X_on_ctrl) i) $ k * (Matrix.col \<psi>\<^sub>0\<^sub>0 j) $ k)"
     by (auto simp: times_mat_def scalar_prod_def)
-  thus "(X_on_ctrl * \<psi>00) $$ (i, j) = \<psi>10 $$ (i, j)"
+  thus "(X_on_ctrl * \<psi>\<^sub>0\<^sub>0) $$ (i, j) = \<psi>\<^sub>1\<^sub>0 $$ (i, j)"
     using  mat_of_cols_list_def X_tensor_id a0
     by (auto simp: diff_divide_distrib)
 next
-  show "dim_row (X_on_ctrl * \<psi>00) = dim_row \<psi>10"
+  show "dim_row (X_on_ctrl * \<psi>\<^sub>0\<^sub>0) = dim_row \<psi>\<^sub>1\<^sub>0"
     using X_tensor_id mat_of_cols_list_def by simp
-  show "dim_col (X_on_ctrl * \<psi>00) = dim_col \<psi>10"
+  show "dim_col (X_on_ctrl * \<psi>\<^sub>0\<^sub>0) = dim_col \<psi>\<^sub>1\<^sub>0"
     using X_tensor_id mat_of_cols_list_def by simp
 qed
 
-(* Second Operation *)
-lemma \<psi>10_to_\<psi>11:
-  shows "CNOT * \<psi>10 = \<psi>11"
+lemma \<psi>\<^sub>1\<^sub>0_is_state:
+  shows "state 2 \<psi>\<^sub>1\<^sub>0"
+  using X_on_ctrl_is_gate \<psi>\<^sub>0\<^sub>0_is_state \<psi>\<^sub>0\<^sub>0_to_\<psi>\<^sub>1\<^sub>0
+  by (metis gate_on_state_is_state)
+
+subsection "Second Operation"
+
+lemma \<psi>\<^sub>1\<^sub>0_to_\<psi>\<^sub>1\<^sub>1:
+  shows "CNOT * \<psi>\<^sub>1\<^sub>0 = \<psi>\<^sub>1\<^sub>1"
 proof
-  show "dim_row (CNOT * \<psi>10) = dim_row \<psi>11"
+  show "dim_row (CNOT * \<psi>\<^sub>1\<^sub>0) = dim_row \<psi>\<^sub>1\<^sub>1"
     by (simp add: CNOT_def mat_of_cols_list_def)
-  show "dim_col (CNOT * \<psi>10) = dim_col \<psi>11"
+  show "dim_col (CNOT * \<psi>\<^sub>1\<^sub>0) = dim_col \<psi>\<^sub>1\<^sub>1"
     by (simp add: CNOT_def mat_of_cols_list_def)
   fix i j:: nat
-  assume "i < dim_row \<psi>11" and "j < dim_col \<psi>11"
+  assume "i < dim_row \<psi>\<^sub>1\<^sub>1" and "j < dim_col \<psi>\<^sub>1\<^sub>1"
   then have asm:"i \<in> {0,1,2,3} \<and> j = 0" 
     by (auto simp add: mat_of_cols_list_def)
-  then have "i < dim_row CNOT \<and> j < dim_col \<psi>10" 
+  then have "i < dim_row CNOT \<and> j < dim_col \<psi>\<^sub>1\<^sub>0" 
     by (auto simp: mat_of_cols_list_def CNOT_def)
-  then have "(CNOT * \<psi>10) $$ (i,j)
-        = (\<Sum> k \<in> {0 ..< dim_vec \<psi>10}. (Matrix.row (CNOT) i) $ k * (Matrix.col \<psi>10 j) $ k)"
+  then have "(CNOT * \<psi>\<^sub>1\<^sub>0) $$ (i,j)
+        = (\<Sum> k \<in> {0 ..< dim_vec \<psi>\<^sub>1\<^sub>0}. (Matrix.row (CNOT) i) $ k * (Matrix.col \<psi>\<^sub>1\<^sub>0 j) $ k)"
     by (auto simp: times_mat_def scalar_prod_def)
-  thus "(CNOT * \<psi>10) $$ (i, j) = \<psi>11 $$ (i, j)"
+  thus "(CNOT * \<psi>\<^sub>1\<^sub>0) $$ (i, j) = \<psi>\<^sub>1\<^sub>1 $$ (i, j)"
     using mat_of_cols_list_def asm
     by (auto simp add:  CNOT_def)
 qed
 
-(* Circuit *)
+lemma \<psi>\<^sub>1\<^sub>1_is_state:
+  shows "state 2 \<psi>\<^sub>1\<^sub>1"
+  using CNOT_is_gate \<psi>\<^sub>1\<^sub>0_is_state \<psi>\<^sub>1\<^sub>0_to_\<psi>\<^sub>1\<^sub>1
+  by (metis gate_on_state_is_state)
+
+subsection "Circuit"
+
 definition circ:: "complex Matrix.mat" where
-"circ \<equiv> CNOT * ((X_on_ctrl) * \<psi>00)"
+  "circ \<equiv> CNOT * ((X_on_ctrl) * ( |zero\<rangle> \<Otimes> |zero\<rangle>))"
 
 lemma circ_result [simp]:
-  shows "circ = \<psi>11"
-  using circ_def \<psi>00_to_\<psi>10 \<psi>10_to_\<psi>11 by simp
+  shows "circ = \<psi>\<^sub>1\<^sub>1"
+  using circ_def \<psi>\<^sub>0\<^sub>0_is_zero_zero \<psi>\<^sub>0\<^sub>0_to_\<psi>\<^sub>1\<^sub>0 \<psi>\<^sub>1\<^sub>0_to_\<psi>\<^sub>1\<^sub>1 
+  by simp
+
+lemma circ_res_is_state:
+  shows "state 2 circ"
+  using \<psi>\<^sub>1\<^sub>1_is_state by auto
 
 end
